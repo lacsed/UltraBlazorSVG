@@ -1,0 +1,141 @@
+﻿@(positionSVG = position.ToSvgCoordinates(svgOrigin))
+<circle @onfocusin="HandleFocusIn" @onfocusout="HandleFocusOut" @ondblclick="HandleDBClick" @ondblclick:stopPropagation @onkeyup="HandleKeyUp" 
+        @onmousedown="HandleMouseDown" @onmouseup="HandleMouseUp" @onmouseleave="HandleMouseLeave" @onmouseenter="HandleMouseEnter"
+        cx="@positionSVG.x" cy="@positionSVG.y" r="@radius"
+        pointer-events="all" tabindex="0" style="outline: none;" 
+        fill="none" stroke="@strokeColor" stroke-width="2" />
+
+@if (marked)
+{
+    <circle cx="@positionSVG.x" cy="@positionSVG.y" r="@(radius * markedRadius)"
+            style="user-select: none; pointer-events: none;" 
+            fill="none" stroke="@strokeColor" stroke-width="2" />
+}
+<text x="@positionSVG.x" y="@positionSVG.y" font-size="20" text-anchor="middle" dominant-baseline="central" style="user-select: none; pointer-events: none;" fill="@strokeColor">
+    @text
+    @if (isFocused)
+    {
+        <tspan>|<animate attributeName="visibility" from="visible" to="hidden" dur="1s" repeatCount="indefinite" /></tspan>
+    }
+</text>
+
+
+
+@code {
+    [Parameter]
+    public Vector2D? svgOrigin { get; set; }
+    [Parameter]
+    public Vector2D? position { get; set; }
+    [Parameter]
+    public string? text { get; set; }
+    [Parameter]
+    public bool marked { get; set; }
+    [Parameter]
+    public Guid nodeId { get; set; }
+
+    [Parameter]
+    public EventCallback<Vector2D> positionChanged { get; set; }
+    [Parameter]
+    public EventCallback<string> textChanged { get; set; }
+    [Parameter]
+    public EventCallback<bool> markedChanged { get; set; }
+    [Parameter]
+    public EventCallback<Node> onNodeSelected { get; set; }
+    [Parameter]
+    public EventCallback<Node> onNodeDeSelected { get; set; }
+    [Parameter]
+    public EventCallback<Node> onMouseEnter { get; set; }
+    [Parameter]
+    public EventCallback<Node> onMouseLeave { get; set; }
+
+    private Vector2D? positionSVG;
+
+    private float radius = 50;
+    private float markedRadius = 0.8f;
+
+    private bool isDragging = false;
+    private bool isFocused = false;
+
+    private string strokeColor = "black";
+    private bool isEditing = false;
+
+    private async void HandleKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Backspace" && text.Length > 0)
+        {
+            if (text.Length == 1)
+            {
+                text = "";
+            } else
+            {
+                text = text.Substring(0, text.Length - 1);
+                if (text[text.Length - 1].Equals(' '))
+                    text = text.Substring(0, text.Length - 1);
+            }
+            await textChanged.InvokeAsync(text);
+            StateHasChanged();
+        }
+        else if ((e.Key.Length == 1 && char.IsLetterOrDigit(e.Key[0])))
+        {
+            text += e.Key;
+            await textChanged.InvokeAsync(text);
+            StateHasChanged();
+        }
+    }
+
+    private async void HandleFocusIn()
+    {
+        isFocused = true;
+        strokeColor = "blue";
+        await onNodeSelected.InvokeAsync(this);
+        StateHasChanged();
+    }
+
+    private async void HandleFocusOut()
+    {
+        isFocused = false;
+        strokeColor = "black";
+        await onNodeDeSelected.InvokeAsync(this);
+        StateHasChanged();
+    }
+
+    private async void HandleDBClick(MouseEventArgs e)
+    {
+        if (e.Button == 0)
+        {
+            marked = !marked;
+            await markedChanged.InvokeAsync(marked);
+            StateHasChanged();
+        }
+    }
+
+    private void HandleMouseDown(MouseEventArgs e)
+    {
+        if (e.Button == 0)
+        {
+            isDragging = true;
+        }
+    }
+
+    public async Task HandleMouseMove(MouseEventArgs e)
+    {
+        position += new Vector2D((float) e.MovementX, (float) -e.MovementY);
+        await positionChanged.InvokeAsync(position);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleMouseUp(MouseEventArgs e)
+    {
+        isDragging = false;
+    }
+
+    private async Task HandleMouseLeave(MouseEventArgs e)
+    {
+        await onMouseLeave.InvokeAsync(this);
+    }
+
+    private async Task HandleMouseEnter(MouseEventArgs e)
+    {
+        await onMouseEnter.InvokeAsync(this);
+    }
+}

@@ -1,0 +1,34 @@
+﻿.display {
+    width: 180px;
+    height: 100%;
+    background-color: antiquewhite;
+    border-radius: 10px;
+}
+
+.toggleStates {
+    background-color: darkgrey;
+    display: flex;
+    flex-direction: row;
+    border-radius: 5px;
+    justify-content: space-evenly;
+    margin-top: 5px;
+}
+
+.toggleStates p {
+    margin: 0;
+}
+
+.states-list {
+    background-color: lightgrey;
+    border-radius: 0px 0px 10px 10px;
+    margin: 0;
+    list-style: none;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 3s ease-in-out;
+}
+
+.showing {
+    max-height: 500px; /* Adjust the max-height to a suitable value to show all items */
+    transition: max-height 0.3s ease-in-out; /* Apply the transition for the expanded state */
+}
