@@ -185,6 +185,11 @@ namespace Extra
             return cos_angle;
         }
 
+        public float Slope()
+        {
+            return y / x;
+        }
+
 
         /// <summary>
         /// Calculates and returns the angle between two vectors in radians.
@@ -205,6 +210,19 @@ namespace Extra
             float angle = (float) Math.Acos(cosAngle);
 
             return angle;
+        }
+
+        public static float DistanceToLine(Vector2D point, Vector2D lineStart, Vector2D lineEnd)
+        {
+            Vector2D vStartEnd = lineEnd - lineStart;
+            Vector2D vStartPoint = lineEnd - point;
+
+            float crossProduct = vStartPoint.Cross(vStartEnd);
+            float dotProduct = vStartPoint.Dot(vStartEnd);
+
+            float distance = Math.Abs(crossProduct) / vStartEnd.Length();
+
+            return distance;
         }
 
         public float SignedAngleBetween(Vector2D vector)
@@ -370,6 +388,98 @@ namespace Extra
         public Vector2D Clone()
         {
             return new Vector2D(x, y);
+        }
+
+        public static Vector2D FindCenter(Vector2D A, Vector2D B, Vector2D C)
+        {
+            float tolerance = 0.00001f;
+            Vector2D slopeAC = (C - A);
+
+            if (Math.Abs(slopeAC.y) < tolerance)
+            {
+                // line AC is horizontal
+                Vector2D middleAC = A.Middle(C);
+                Vector2D middleAB = A.Middle(B);
+
+                Vector2D vAB = B - A;
+                Vector2D pAB = vAB.Perpendicular();
+
+                float pSlopeAB = pAB.Slope();
+
+                float circleX = middleAC.x;
+                float circleY = middleAB.y - pSlopeAB * middleAB.x + pSlopeAB * circleX;
+
+                return new Vector2D(circleX, circleY);
+            }
+            else if (Math.Abs(slopeAC.x) < tolerance)
+            {
+                // line AC is vertical
+                Vector2D middleAC = A.Middle(C);
+                Vector2D middleAB = A.Middle(B);
+
+                Vector2D vAB = B - A;
+                Vector2D pAB = vAB.Perpendicular();
+
+                float pSlopeAB = pAB.Slope();
+
+                float circleY = middleAC.y;
+                float circleX = (circleY - middleAB.y + pSlopeAB * middleAB.x) / pSlopeAB;
+
+                return new Vector2D(circleX, circleY);
+            }
+            else
+            {
+                Vector2D m1 = A.Middle(C);
+                Vector2D m2 = A.Middle(B);
+
+                Vector2D vAB = B - A;
+
+                if (Math.Abs(vAB.y) < tolerance)
+                {
+                    float circleX = m2.x;
+
+                    Vector2D vAC = C - A;
+                    Vector2D pAC = vAC.Perpendicular();
+
+                    float pSlopeAC = pAC.Slope();
+                    float circleY = m1.y - pSlopeAC * m1.x + pSlopeAC * circleX;
+
+                    return new Vector2D(circleX, circleY);
+                }
+                else if (Math.Abs(vAB.x) < tolerance)
+                {
+                    float circleY = m2.y;
+
+                    Vector2D vAC = C - A;
+                    Vector2D pAC = vAC.Perpendicular();
+
+                    float pSlopeAC = pAC.Slope();
+                    float circleX = (circleY - m1.y + pSlopeAC * m1.x) / pSlopeAC;
+
+                    return new Vector2D(circleX, circleY);
+                }
+                else
+                {
+                    // General case - Calculate the equations of perpendicular bisectors for AB and BC
+                    Vector2D middleAB = A.Middle(B);
+                    Vector2D middleBC = B.Middle(C);
+
+                    Vector2D vBC = C - B;
+
+                    Vector2D pAB = vAB.Perpendicular();
+                    Vector2D pBC = vBC.Perpendicular();
+
+                    // Slopes of perpendicular bisectors
+                    float pSlopeAB = pAB.Slope();
+                    float pSlopeBC = pBC.Slope();
+
+                    // Intersection point of the two perpendicular bisectors
+                    float circleX = (pSlopeAB * middleAB.x - pSlopeBC * middleBC.x + middleBC.y - middleAB.y) / (pSlopeAB - pSlopeBC);
+                    float circleY = middleAB.y + pSlopeAB * (circleX - middleAB.x);
+
+                    return new Vector2D(circleX, circleY);
+                }
+            }
         }
     }
 }

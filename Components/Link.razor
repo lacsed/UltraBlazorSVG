@@ -7,8 +7,8 @@ if(isCurved)
 } 
 else
 {
-    <line x1="@lineStart.x" y1="@lineStart.y" x2="@arrowTip.x" y2="@arrowTip.y" tabindex="0" stroke="red" style="outline: none;" stroke-width="10" pointer-events="stroke" 
-            @onfocusin="HandleFocusIn" @onfocusout="HandleFocusOut"/>
+    <line x1="@lineStart.x" y1="@lineStart.y" x2="@arrowTip.x" y2="@arrowTip.y" tabindex="0" stroke="transparent" style="outline: none;" stroke-width="10" pointer-events="stroke" 
+            @onfocusin="HandleFocusIn"/>
     <line x1="@lineStart.x" y1="@lineStart.y" x2="@lineEnd.x" y2="@lineEnd.y" stroke="@linkColor" stroke-width="2" />
 }
 <polygon points="@arrowTip.x @arrowTip.y @rightWing.x @rightWing.y @leftWing.x @leftWing.y" tabindex="0" fill="@linkColor" style="outline: none;" stroke-width="1" />
@@ -38,9 +38,11 @@ else
     private Vector2D rightWing = new Vector2D();
     private Vector2D leftWing = new Vector2D();
 
+    private Vector2D arcCenter = new Vector2D();
+
     private bool isCurved = false;
 
-    private float arcPercentage = 0.4f;
+    private float centerRatio = 0.4f;
     private float arcRadius = 10;
     private float arrowLength = 10;
     private float arrowWidth = 10;
@@ -54,54 +56,44 @@ else
     protected override async Task OnParametersSetAsync()
     {
         Vector2D transitionDirection = (destinationState - originState).Normalized();
+        Vector2D midPos = originState.Middle(destinationState);
         Vector2D perpendicularDirection = transitionDirection.Perpendicular();
+
+        float transDist = (destinationState - originState).Length();
 
         if (isCurved)
         {
-            float nodeArcAngle = Vector2D.AngleBetween(nodeRadius, arcRadius, arcRadius);
-            float arrowArcAngle = Vector2D.AngleBetween(arrowLength, arcRadius, arcRadius);
+            Vector2D center = midPos + perpendicularDirection * centerRatio * transDist;
 
-            if (arcPercentage > 0)
-            {
-                float centerOffset = (1 - arcPercentage);
+            arcRadius = (originState - center).Length();
+            float rtDir = (sweepFlag == 1) ? -1 : 1;
 
-                Vector2D arcCenter = originState.Middle(destinationState) - perpendicularDirection * centerOffset * arcRadius;
+            Vector2D vCenterOrigin = originState - center;
+            Vector2D vCenterDestination = destinationState - center;
 
-                Vector2D centerToOrigin = originState - arcCenter;
-                Vector2D centerToDestination = destinationState - arcCenter;
+            float ndRadAng = Vector2D.AngleBetween(nodeRadius, arcRadius, arcRadius);
+            float arwAng = Vector2D.AngleBetween(arrowLength, arcRadius, arcRadius);
 
-                arcStart = arcCenter + centerToOrigin.Rotated(nodeArcAngle);
-                arcEnd = arcCenter + centerToDestination.Rotated(-(nodeArcAngle + arrowArcAngle));
+            Vector2D vCenterArcStart = vCenterOrigin.Rotated(rtDir * ndRadAng);
+            Vector2D vCenterArrowTip = vCenterDestination.Rotated(-rtDir * ndRadAng);
+            Vector2D vCenterArcEnd = vCenterArrowTip.Rotated(-rtDir * arwAng);
 
-                arrowTip = arcCenter + centerToDestination.Rotated(-nodeArcAngle);
-            }
-            else
-            {
-                float centerOffset = -(1 + arcPercentage);
+            Vector2D tArcStart = center + vCenterArcStart;
+            Vector2D tArcEnd = center + vCenterArcEnd;
+            Vector2D tArrowTip = center + vCenterArrowTip;
 
-                Vector2D arcCenter = originState.Middle(destinationState) - perpendicularDirection * centerOffset * arcRadius;
-
-                Vector2D centerToOrigin = originState - arcCenter;
-                Vector2D centerToDestination = destinationState - arcCenter;
-
-                arcStart = arcCenter + centerToOrigin.Rotated(-nodeArcAngle);
-                arcEnd = arcCenter + centerToDestination.Rotated(nodeArcAngle + arrowArcAngle);
-
-                arrowTip = arcCenter + centerToDestination.Rotated(nodeArcAngle);
-            }
-
-            Vector2D arrowDirection = (arrowTip - arcEnd).Normalized();
+            Vector2D arrowDirection = (tArrowTip - tArcEnd).Normalized();
             Vector2D arrowPerpendicular = arrowDirection.Perpendicular();
 
-            rightWing = arcEnd + arrowPerpendicular * arrowWidth / 2;
-            leftWing = arcEnd - arrowPerpendicular * arrowWidth / 2;
+            Vector2D tArrowRightWing = tArcEnd + arrowPerpendicular * arrowWidth / 2;
+            Vector2D tArrowLeftWing = tArcEnd - arrowPerpendicular * arrowWidth / 2;
 
-            arcStart = arcStart.ToSvgCoordinates(svgOrigin);
-            arcEnd = arcEnd.ToSvgCoordinates(svgOrigin);
+            arcStart = tArcStart.ToSvgCoordinates(svgOrigin);
+            arcEnd = tArcEnd.ToSvgCoordinates(svgOrigin);
 
-            arrowTip = arrowTip.ToSvgCoordinates(svgOrigin);
-            rightWing = rightWing.ToSvgCoordinates(svgOrigin);
-            leftWing = leftWing.ToSvgCoordinates(svgOrigin);
+            arrowTip = tArrowTip.ToSvgCoordinates(svgOrigin);
+            rightWing = tArrowRightWing.ToSvgCoordinates(svgOrigin);
+            leftWing = tArrowLeftWing.ToSvgCoordinates(svgOrigin);
         }
         else
         {
@@ -132,6 +124,7 @@ else
 
     private async Task HandleFocusOut()
     {
+        Console.WriteLine("perdeu foco");
         linkColor = "black";
         await onLinkDeSelected.InvokeAsync(this);
         await InvokeAsync(StateHasChanged);
@@ -139,123 +132,55 @@ else
 
     public async Task HandleMouseMove(MouseEventArgs e)
     {
+        Console.WriteLine("mouse movendo");
+        float tolerance = 0.1f;
+        float margin = 0.08f;
+
+        Vector2D msPosSVG = new Vector2D((float)e.OffsetX, (float)e.OffsetY);
         Vector2D mousePosition = new Vector2D((float)e.OffsetX, (float)e.OffsetY).FromSvgCoordinates(svgOrigin);
-        Vector2D middlePoint = originState.Middle(destinationState);
 
-        float transitionDistance = (destinationState - originState).Length();
+        Vector2D midPos = originState.Middle(destinationState);
 
-        Vector2D mouseToOrigin = originState - mousePosition;
-        Vector2D mouseToDestination = destinationState - mousePosition;
-        Vector2D mouseToMiddle = middlePoint - mousePosition;
-        Vector2D originToDestination = destinationState - originState;
+        Vector2D vOD = destinationState - originState;
+        Vector2D vOM = mousePosition - originState;
+        Vector2D vDM = mousePosition - destinationState;
 
-        float distanceMouseToTransition = mouseToMiddle.Length() * (float)Math.Sin(mouseToMiddle.AngleBetween(originToDestination));
+        float distT = vOD.Length();
+        float distOM = vOM.Length();
+        float distDM = vDM.Length();
+        float distMM = (midPos - mousePosition).Length();
+        float transRad = distT / 2;
 
-        float angleX = mouseToOrigin.AngleBetween(originToDestination);
-        float angleY = (float)Math.PI - mouseToOrigin.AngleBetween(mouseToDestination);
-        float angleZ = mouseToDestination.AngleBetween(originToDestination);
+        float distMT = Vector2D.DistanceToLine(mousePosition, originState, destinationState);
 
-        float angleAlpha = (angleY - angleZ - angleX) / 2;
-
-        arcRadius = transitionDistance / (2 * (float)Math.Cos(angleAlpha));
-
-        float height = (float)Math.Sqrt(Math.Pow(arcRadius, 2) - Math.Pow(transitionDistance, 2));
-
-        float distanceMouseMiddle = (middlePoint - mousePosition).Length();
+        sweepFlag = (vOD.Cross(vOM) > 0) ? 1 : 0;
 
         isCurved = true;
 
-        if (distanceMouseMiddle > transitionDistance / 2)
-        {
-            arcPercentage = 1;
-        }
-        else if (distanceMouseToTransition <= 0.01 * transitionDistance)
+        if (distMT < tolerance * distT)
         {
             isCurved = false;
         }
+        else if (Math.Abs(distMM - transRad) < margin * transRad)
+        {
+            centerRatio = 0;
+            largeArcFlag = 0;
+        }
         else
         {
-            arcPercentage = (arcRadius - height) / arcRadius;
+            Vector2D center = Vector2D.FindCenter(originState, mousePosition, destinationState);
+
+            float radius = (destinationState - center).Length();
+            float distCM = (midPos - center).Length();
+
+            Vector2D vOC = (center - originState);
+            float value = vOD.Cross(vOC);
+
+            centerRatio = (vOD.Cross(vOC) > 0) ? -distCM / distT : distCM / distT;
+            largeArcFlag = (distMM < distT / 2) ? 0 : 1;
         }
-
-        Vector2D middleToMouse = mousePosition - middlePoint;
-        Vector2D middleToOrigin = mousePosition - middlePoint;
-
-        float crossValue = middleToOrigin.Cross(middleToMouse);
-
-        if (crossValue > 0)
-        {
-            sweepFlag = 1;
-        } else if (crossValue < 0)
-        {
-            sweepFlag = 0;
-        }
-
-        largeArcFlag = 0;
 
         await InvokeAsync(StateHasChanged);
-    }
-
-    private Vector2D FindCenter(Vector2D A, Vector2D B, Vector2D C)
-    {
-        float slopeAB;
-        float slopeBC;
-
-        if (Math.Abs(B.x - A.x) < float.Epsilon)
-        {
-            slopeAB = float.PositiveInfinity;
-        }
-        else
-        {
-            slopeAB = (B.y - A.y) / (B.x - A.x);
-        }
-
-        if (Math.Abs(C.x - B.x) < float.Epsilon)
-        {
-            slopeBC = float.PositiveInfinity;
-        }
-        else
-        {
-            slopeBC = (C.y - B.y) / (C.x - B.x);
-        }
-
-        // Check if the points are collinear
-        if (Math.Abs(slopeAB - slopeBC) < float.Epsilon)
-        {
-            throw new Exception("Points are collinear, no unique circle exists.");
-        }
-
-        Vector2D midpointAB = new Vector2D((A.x + B.x) / 2, (A.y + B.y) / 2);
-        Vector2D midpointBC = new Vector2D((B.x + C.x) / 2, (B.y + C.y) / 2);
-
-        bool centerAbove = midpointAB.y < A.y;
-
-        float perpendicularAB = -1 / slopeAB;
-        float perpendicularBC = -1 / slopeBC;
-
-        float interceptAB = midpointAB.y - perpendicularAB * midpointAB.x;
-        float interceptBC = midpointBC.y - perpendicularBC * midpointBC.x;
-
-        float center_x;
-        float center_y;
-
-        if (float.IsInfinity(perpendicularAB))
-        {
-            center_x = midpointAB.x;
-            center_y = centerAbove ? perpendicularBC * center_x + interceptBC : -perpendicularBC * center_x - interceptBC;
-        }
-        else if (float.IsInfinity(perpendicularBC))
-        {
-            center_x = midpointBC.x;
-            center_y = centerAbove ? perpendicularAB * center_x + interceptAB : -perpendicularAB * center_x - interceptAB;
-        }
-        else
-        {
-            center_x = (interceptBC - interceptAB) / (perpendicularAB - perpendicularBC);
-            center_y = centerAbove ? perpendicularAB * center_x + interceptAB : -perpendicularAB * center_x - interceptAB;
-        }
-        Console.WriteLine("olha o centro = " + new Vector2D(center_x, center_y));
-        return new Vector2D(center_x, center_y);
     }
 
     private float FindRadius(Vector2D center, Vector2D point)
