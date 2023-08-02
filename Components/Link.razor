@@ -1,18 +1,28 @@
 ﻿@{
-CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-if(isCurved)
-{
-    <path d="M @arcStart.x @arcStart.y A @arcRadius @arcRadius 0 @largeArcFlag @sweepFlag @arcEnd.x @arcEnd.y" fill="none" style="outline: none;" stroke="black" tabindex="0" stroke-width="2" />
-    <path d="M @arcStart.x @arcStart.y A @arcRadius @arcRadius 0 @largeArcFlag @sweepFlag @arcEnd.x @arcEnd.y" fill="none" style="outline: none;" stroke="transparent" tabindex="0" stroke-width="10" pointer-events="stroke" />
-} 
-else
-{
-    <line x1="@lineStart.x" y1="@lineStart.y" x2="@arrowTip.x" y2="@arrowTip.y" tabindex="0" stroke="transparent" style="outline: none;" stroke-width="10" pointer-events="stroke" 
-            @onfocusin="HandleFocusIn"/>
-    <line x1="@lineStart.x" y1="@lineStart.y" x2="@lineEnd.x" y2="@lineEnd.y" stroke="@linkColor" stroke-width="2" />
+    CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+    if (isCurved)
+    {
+        <path d="M @arcStart.x @arcStart.y A @arcRadius @arcRadius 0 @largeArcFlag @sweepFlag @arcEnd.x @arcEnd.y" fill="none" style="outline: none;" stroke="@linkColor" tabindex="0" stroke-width="2" pointer-events="none" />
+        <path d="M @arcStart.x @arcStart.y A @arcRadius @arcRadius 0 @largeArcFlag @sweepFlag @arcEnd.x @arcEnd.y" fill="none" style="outline: none;" stroke="transparent" tabindex="0" stroke-width="10" pointer-events="stroke" 
+                @onmousedown="HandleMouseDown"/>
+    }
+    else
+    {
+        <line x1="@lineStart.x" y1="@lineStart.y" x2="@lineEnd.x" y2="@lineEnd.y" stroke="@linkColor" stroke-width="2" pointer-events="none" />
+        <line x1="@lineStart.x" y1="@lineStart.y" x2="@arrowTip.x" y2="@arrowTip.y" tabindex="0" stroke="transparent" style="outline: none;" stroke-width="10" pointer-events="stroke"
+                @onmousedown="HandleMouseDown"/>
+
+    }
+    <polygon points="@arrowTip.x @arrowTip.y @rightWing.x @rightWing.y @leftWing.x @leftWing.y" tabindex="0" fill="@linkColor" style="outline: none;" stroke-width="1" />
 }
-<polygon points="@arrowTip.x @arrowTip.y @rightWing.x @rightWing.y @leftWing.x @leftWing.y" tabindex="0" fill="@linkColor" style="outline: none;" stroke-width="1" />
-}
+
+<text x="@textPosition.x" y="@textPosition.y" font-size="20" text-anchor="middle" dominant-baseline="central" style="user-select: none;" fill="@linkColor">
+    @testName
+    @if (isFocused)
+    {
+        <tspan>|<animate attributeName="visibility" from="visible" to="hidden" dur="1s" repeatCount="indefinite" /></tspan>
+    }
+</text>
 
 
 @code {
@@ -21,12 +31,14 @@ else
     [Parameter]
     public Vector2D? destinationState { get; set; }
     [Parameter]
+    public string? transitionName { get; set; }
+    [Parameter]
     public Vector2D? svgOrigin { get; set; }
 
     [Parameter]
-    public EventCallback<Link> onLinkSelected { get; set; }
+    public EventCallback<string> transitionNameChanged { get; set; }
     [Parameter]
-    public EventCallback<Link> onLinkDeSelected { get; set; }
+    public EventCallback<Link> onLinkSelected { get; set; }
 
     private Vector2D lineStart = new Vector2D();
     private Vector2D lineEnd = new Vector2D();
@@ -38,9 +50,12 @@ else
     private Vector2D rightWing = new Vector2D();
     private Vector2D leftWing = new Vector2D();
 
-    private Vector2D arcCenter = new Vector2D();
+    private Vector2D textPosition = new Vector2D();
 
+    private Vector2D arcCenter = new Vector2D();
+    private string testName = "testName";
     private bool isCurved = false;
+    private bool isFocused = false;
 
     private float centerRatio = 0.4f;
     private float arcRadius = 10;
@@ -51,7 +66,7 @@ else
     private int largeArcFlag = 0;
     private int sweepFlag = 0;
 
-    private string linkColor = "blue";
+    private string linkColor = "black";
 
     protected override async Task OnParametersSetAsync()
     {
@@ -67,6 +82,13 @@ else
 
             arcRadius = (originState - center).Length();
             float rtDir = (sweepFlag == 1) ? -1 : 1;
+            float textMargin = 20;
+
+            int centerSide = (centerRatio > 0) ? 1 : -1;
+            int textSide = (largeArcFlag > 0) ? 1 : -1;
+
+            Vector2D tempTextPos = center + perpendicularDirection * textSide * centerSide * (arcRadius + textMargin);
+            textPosition = tempTextPos.ToSvgCoordinates(svgOrigin);
 
             Vector2D vCenterOrigin = originState - center;
             Vector2D vCenterDestination = destinationState - center;
@@ -104,6 +126,9 @@ else
             rightWing = lineEnd + perpendicularDirection * arrowWidth / 2;
             leftWing = lineEnd - perpendicularDirection * arrowWidth / 2;
 
+            Vector2D cartesianText = midPos + perpendicularDirection * 20;
+            textPosition = cartesianText.ToSvgCoordinates(svgOrigin);
+
             lineStart = lineStart.ToSvgCoordinates(svgOrigin);
             lineEnd = lineEnd.ToSvgCoordinates(svgOrigin);
 
@@ -115,19 +140,49 @@ else
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task HandleFocusIn()
+    public async Task HandleGainFocus()
     {
+        isFocused = true;
         linkColor = "blue";
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public async Task HandleLoseFocus()
+    {
+        isFocused = false;
+        linkColor = "black";
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleMouseDown()
+    {
         await onLinkSelected.InvokeAsync(this);
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task HandleFocusOut()
+    public void HandleKeyUp(KeyboardEventArgs e)
     {
-        Console.WriteLine("perdeu foco");
-        linkColor = "black";
-        await onLinkDeSelected.InvokeAsync(this);
-        await InvokeAsync(StateHasChanged);
+        if (e.Key == "Backspace" && testName.Length > 0)
+        {
+            if (testName.Length == 1)
+            {
+                testName = "";
+            }
+            else
+            {
+                testName = testName.Substring(0, testName.Length - 1);
+                if (testName[testName.Length - 1].Equals(' '))
+                    testName = testName.Substring(0, testName.Length - 1);
+            }
+            //await textChanged.InvokeAsync(testName);
+            StateHasChanged();
+        }
+        else if ((e.Key.Length == 1 && char.IsLetterOrDigit(e.Key[0])))
+        {
+            testName += e.Key;
+            //await textChanged.InvokeAsync(testName);
+            StateHasChanged();
+        }
     }
 
     public async Task HandleMouseMove(MouseEventArgs e)

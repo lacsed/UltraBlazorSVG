@@ -1,11 +1,11 @@
 ﻿<svg @ondblclick="HandleDoubleClick" @onmousedown="HandleMouseDown" @onmouseup="HandleMouseUp" @onmousemove="HandleMouseMove" @onkeydown="HandleKeyDown" @onkeyup="HandleKeyUp" style="@cursor" class="canvas" tabindex="0">
     @foreach (Particle particle in simulation.particles)
     {
-        <Node @key="particle.id" nodeId="particle.id" onMouseEnter="HandleEnterNode" onMouseLeave="HandleLeaveNode" onNodeSelected="HandleNodeSelected" onNodeDeSelected="HandleNodeDeSelected" svgOrigin=@svgOrigin @bind-position=particle.position @bind-text=particle.name @bind-marked=particle.marked></Node>
+        <Node @key="particle.id" nodeId="particle.id" onMouseEnter="HandleEnterNode" onMouseLeave="HandleLeaveNode" onNodeSelected="HandleNodeSelected" svgOrigin=@svgOrigin @bind-position=particle.position @bind-text=particle.name @bind-marked=particle.marked></Node>
     }
     @foreach (SMTransition transition in simulation.transitions)
     {
-        <Link onLinkSelected="HandleLinkSelected" onLinkDeSelected="HandleLinkDeSelected" originState=@transition.origin.position destinationState=@transition.destination.position svgOrigin="svgOrigin"></Link>
+        <Link onLinkSelected="HandleLinkSelected" originState=@transition.origin.position destinationState=@transition.destination.position svgOrigin="svgOrigin"></Link>
     }
     @if(isCreatingTempLink)
     {
@@ -29,6 +29,7 @@
     private bool isCreatingTempLink = false;
     private bool isCreatingTransition = false;
     private bool isPanning = false;
+    private bool movingElement = false;
 
     private string cursor = "cursor: default;";
 
@@ -87,6 +88,7 @@
         if (e.Button == 0)
         {
             mouseDown = false;
+            movingElement = false;
             if (isPanning)
             {
                 isPanning = false;
@@ -97,7 +99,7 @@
             {
                 if (tempLinkDestinationState != null)
                 {
-                    AddNewLink();
+                    await AddNewLink();
                     await InvokeAsync(StateHasChanged);
                 }
                 else
@@ -110,20 +112,50 @@
         }
     }
 
-    private void HandleNodeSelected(Node node)
+    private async Task HandleNodeSelected(Node node)
     {
-        activeNodeReference = node;
+        if (activeLinkReference != null)
+        {
+            await activeLinkReference.HandleLoseFocus();
+            activeLinkReference = null;
+            activeNodeReference = node;
+            await activeNodeReference.HandleGainFocus();
+        }
+        else if (activeNodeReference != null && activeNodeReference != node)
+        {
+            await activeNodeReference.HandleLoseFocus();
+            activeNodeReference = node;
+            await activeNodeReference.HandleGainFocus();
+        }
+        else
+        {
+            activeNodeReference = node;
+            await activeNodeReference.HandleGainFocus();
+        }
+        movingElement = true;
     }
 
-    private void HandleNodeDeSelected(Node node)
+    private async Task HandleLinkSelected(Link link)
     {
-        if (activeNodeReference == node)
+        if (activeNodeReference != null)
+        {
+            await activeNodeReference.HandleLoseFocus();
             activeNodeReference = null;
-    }
-
-    private void HandleLinkSelected(Link link)
-    {
-        activeLinkReference = link;
+            activeLinkReference = link;
+            await activeLinkReference.HandleGainFocus();
+        }
+        else if (activeLinkReference != null && activeLinkReference != link)
+        {
+            await activeLinkReference.HandleLoseFocus();
+            activeLinkReference = link;
+            await activeLinkReference.HandleGainFocus();
+        }
+        else
+        {
+            activeLinkReference = link;
+            await activeLinkReference.HandleGainFocus();
+        }
+        movingElement = true;
     }
 
     private void HandleLinkDeSelected(Link link)
@@ -144,11 +176,11 @@
             mousePosition = new Vector2D((float) e.OffsetX, (float) e.OffsetY);
             await InvokeAsync(StateHasChanged);
         }
-        else if (mouseDown && activeNodeReference != null)
+        else if (mouseDown && movingElement && activeNodeReference != null)
         {
             await activeNodeReference.HandleMouseMove(e);
         }
-        else if (mouseDown && activeLinkReference != null)
+        else if (mouseDown && movingElement && activeLinkReference != null)
         {
             Console.WriteLine("moving link");
             await activeLinkReference.HandleMouseMove(e);
@@ -195,6 +227,10 @@
 
     private async Task HandleKeyUp(KeyboardEventArgs e)
     {
+        if (activeLinkReference != null)
+        {
+            activeLinkReference.HandleKeyUp(e);
+        }
         if (e.Key == " ")
         {
             holdingSpace = false;
@@ -208,12 +244,27 @@
         }
     }
 
-    private void AddNewLink()
+    private async Task AddNewLink()
     {
         SMTransition newLink = new SMTransition(TransitionType.State, simulation.particles.Find(x => x.id == tempLinkOriginID), simulation.particles.Find(x => x.id == tempLinkDestinationID), "");
-        simulation.transitions.Add(newLink);
+
+        if (activeLinkReference != null)
+        {
+            await activeLinkReference.HandleLoseFocus();
+            activeLinkReference = null;
+        }
+        else if (activeNodeReference != null)
+        {
+            await activeNodeReference.HandleLoseFocus();
+            activeNodeReference = null;
+        }
+
         tempLinkOriginState = null;
         tempLinkDestinationState = null;
         isCreatingTempLink = false;
+
+        simulation.transitions.Add(newLink);
+
+        await InvokeAsync(StateHasChanged);
     }
 }

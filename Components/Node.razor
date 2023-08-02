@@ -1,5 +1,5 @@
 ﻿@(positionSVG = position.ToSvgCoordinates(svgOrigin))
-<circle @onfocusin="HandleFocusIn" @onfocusout="HandleFocusOut" @ondblclick="HandleDBClick" @ondblclick:stopPropagation @onkeyup="HandleKeyUp" 
+<circle @ondblclick="HandleDBClick" @ondblclick:stopPropagation @onkeyup="HandleKeyUp" 
         @onmousedown="HandleMouseDown" @onmouseup="HandleMouseUp" @onmouseleave="HandleMouseLeave" @onmouseenter="HandleMouseEnter"
         cx="@positionSVG.x" cy="@positionSVG.y" r="@radius"
         pointer-events="all" tabindex="0" style="outline: none;" 
@@ -83,20 +83,18 @@
         }
     }
 
-    private async void HandleFocusIn()
+    public async Task HandleGainFocus()
     {
         isFocused = true;
         strokeColor = "blue";
-        await onNodeSelected.InvokeAsync(this);
-        StateHasChanged();
+        await InvokeAsync(StateHasChanged);
     }
 
-    private async void HandleFocusOut()
+    public async Task HandleLoseFocus()
     {
         isFocused = false;
         strokeColor = "black";
-        await onNodeDeSelected.InvokeAsync(this);
-        StateHasChanged();
+        await InvokeAsync(StateHasChanged);
     }
 
     private async void HandleDBClick(MouseEventArgs e)
@@ -109,11 +107,12 @@
         }
     }
 
-    private void HandleMouseDown(MouseEventArgs e)
+    private async void HandleMouseDown(MouseEventArgs e)
     {
         if (e.Button == 0)
         {
             isDragging = true;
+            await onNodeSelected.InvokeAsync(this);
         }
     }
 
