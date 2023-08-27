@@ -5,30 +5,22 @@
     border-radius: 10px;
 }
 
-.toggleStates {
-    background-color: darkgrey;
+.states-list {
+    list-style: none;
+}
+
+.display li {
+    background-color: red;
+    width: 100%;
+    height: fit-content;
     display: flex;
     flex-direction: row;
-    border-radius: 5px;
-    justify-content: space-evenly;
-    margin-top: 5px;
 }
 
-.toggleStates p {
-    margin: 0;
-}
-
-.states-list {
-    background-color: lightgrey;
-    border-radius: 0px 0px 10px 10px;
-    margin: 0;
-    list-style: none;
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 3s ease-in-out;
-}
-
-.showing {
-    max-height: 500px; /* Adjust the max-height to a suitable value to show all items */
-    transition: max-height 0.3s ease-in-out; /* Apply the transition for the expanded state */
+.check-box {
+    background-color: green;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    border: 5px;
 }

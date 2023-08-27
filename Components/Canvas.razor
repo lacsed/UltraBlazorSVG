@@ -1,7 +1,7 @@
 ﻿<svg @ondblclick="HandleDoubleClick" @onmousedown="HandleMouseDown" @onmouseup="HandleMouseUp" @onmousemove="HandleMouseMove" @onkeydown="HandleKeyDown" @onkeyup="HandleKeyUp" style="@cursor" class="canvas" tabindex="0">
     @foreach (Particle particle in simulation.particles)
     {
-        <Node @key="particle.id" nodeId="particle.id" onMouseEnter="HandleEnterNode" onMouseLeave="HandleLeaveNode" onNodeSelected="HandleNodeSelected" svgOrigin=@svgOrigin @bind-position=particle.position @bind-text=particle.name @bind-marked=particle.marked></Node>
+        <Node @key="particle.id" nodeId="particle.id" nodeChanged="HandleNodeChanged" onMouseEnter="HandleEnterNode" onMouseLeave="HandleLeaveNode" onNodeSelected="HandleNodeSelected" svgOrigin=@svgOrigin @bind-position=particle.position @bind-text=particle.name @bind-marked=particle.marked></Node>
     }
     @foreach (SMTransition transition in simulation.transitions)
     {
@@ -46,6 +46,11 @@
     private Vector2D tempLinkOrigin;
     private Vector2D tempLinkMouse;
     private Vector2D mousePosition;
+
+    private async Task HandleNodeChanged()
+    {
+        await simulationChanged.InvokeAsync(simulation);
+    }
 
     private async void HandleDoubleClick(MouseEventArgs e)
     {

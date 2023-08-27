@@ -1,8 +1,23 @@
-﻿<div style="background-color: blue; width: 120px; height: 2000px;"></div>
+﻿<div class="display">
+    <ul class="states-list showing">
+        @foreach (Particle particle in simulation.particles)
+        {
+            <li>
+                <div class="check-box"></div>
+                <text>@particle.name</text>
+            </li>
+        }
+    </ul>
+</div>
 
 
 
 @code {
+    [Parameter]
+    public Simulation simulation { get; set; }
+    [Parameter]
+    public EventCallback<Simulation> simulationChanged { get; set; }
+
     private bool showList;
     private string displayList => showList ? "block" : "none";
 

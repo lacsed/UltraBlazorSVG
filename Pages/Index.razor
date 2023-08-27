@@ -13,21 +13,7 @@
         </ul>
     </div>
     <div class="bottom">
-        <div class="display">
-            <div class="toggleStates" @onclick="ToggleStates">
-                <p>States</p>
-                <i class="@stateArrowDirection"></i>
-            </div>
-            @if (showingStates)
-            {
-                <ul class="states-list showing" @key="animationKey">
-                    @foreach (Particle particle in simulation.particles)
-                    {
-                        <li>@particle.name</li>
-                    }
-                </ul>
-            }
-        </div>
+        <Display @bind-simulation=simulation />
         <Canvas @bind-simulation=simulation />
     </div>
 </div>

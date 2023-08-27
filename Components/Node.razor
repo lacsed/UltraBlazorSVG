@@ -47,6 +47,8 @@
     public EventCallback<Node> onMouseEnter { get; set; }
     [Parameter]
     public EventCallback<Node> onMouseLeave { get; set; }
+    [Parameter]
+    public EventCallback nodeChanged { get; set; }
 
     private Vector2D? positionSVG;
 
@@ -59,26 +61,29 @@
     private string strokeColor = "black";
     private bool isEditing = false;
 
-    private async void HandleKeyUp(KeyboardEventArgs e)
+    private async Task HandleKeyUp(KeyboardEventArgs e)
     {
         if (e.Key == "Backspace" && text.Length > 0)
         {
             if (text.Length == 1)
             {
                 text = "";
-            } else
+            } 
+            else if (text.Length > 0)
             {
                 text = text.Substring(0, text.Length - 1);
                 if (text[text.Length - 1].Equals(' '))
                     text = text.Substring(0, text.Length - 1);
             }
-            await textChanged.InvokeAsync(text);
+
+            await nodeChanged.InvokeAsync();
             StateHasChanged();
         }
         else if ((e.Key.Length == 1 && char.IsLetterOrDigit(e.Key[0])))
         {
             text += e.Key;
             await textChanged.InvokeAsync(text);
+            await nodeChanged.InvokeAsync();
             StateHasChanged();
         }
     }
