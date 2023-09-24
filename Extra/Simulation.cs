@@ -25,15 +25,18 @@ namespace Extra
             springs = inSprings;
         }
 
-        public void Simulate()
+        public void Simulate(bool initPos)
         {
-            float spacing = 100000000.0f;
-            float elastic = 1000.0f;
-            float stop_condition = 0.0025f;
-            float attenuation = 0.0001f;
+            float spacing = 10.0f;
+            float elastic = 10.0f;
+            float stop_condition = 0.05f;
+            float attenuation = 0;
             float maximum_displacement = 10 * stop_condition;
 
-            Particle.InitialPositioning(particles);
+            if (initPos)
+            {
+                Particle.InitialPositioning(particles);
+            }
 
             while (maximum_displacement > stop_condition)
             {

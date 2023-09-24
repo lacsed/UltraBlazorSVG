@@ -252,7 +252,7 @@
     private async Task AddNewLink()
     {
         SMTransition newLink = new SMTransition(TransitionType.State, simulation.particles.Find(x => x.id == tempLinkOriginID), simulation.particles.Find(x => x.id == tempLinkDestinationID), "");
-
+        Spring newSpring = new Spring(simulation.particles.Find(x => x.id == tempLinkOriginID), simulation.particles.Find(x => x.id == tempLinkDestinationID));
         if (activeLinkReference != null)
         {
             await activeLinkReference.HandleLoseFocus();
@@ -269,6 +269,7 @@
         isCreatingTempLink = false;
 
         simulation.transitions.Add(newLink);
+        //simulation.springs.Add(newSpring);
 
         await InvokeAsync(StateHasChanged);
     }

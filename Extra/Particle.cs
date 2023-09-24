@@ -57,25 +57,22 @@ namespace Extra
             }
         }
 
-        void InteractParticle(Particle ops_particle, float attenuation, float spacing)
+        void InteractParticle(Particle prtB, float atten, float spacing)
         {
-            Vector2D particle_a_position = this.position;
-            Vector2D particle_b_position = ops_particle.position;
+            Vector2D dispDir = (prtB.position - this.position).Normalized();
+            float prtDist = (prtB.position - this.position).Length();
 
+            if (prtDist < 1e-6)
+            {
+                prtDist = 1e-6f;
+            }
 
-            // The angle between the x axis and the vector that goes from a to b.
-            float force_angle = (float) Math.Atan2(particle_b_position.y- particle_a_position.y, particle_b_position.x - particle_a_position.x);
+            float force = (1 - atten) * spacing / prtDist;
 
-            // Distance between the particles and the corresponding repelling force between them.
-            float partile_distance = (float) Math.Sqrt(Math.Pow(particle_b_position.x - particle_a_position.x, 2) + Math.Pow(particle_b_position.y - particle_a_position.y, 2));
-            float repelling_force = attenuation * spacing / partile_distance;
-
-            // The resulting displacement.
-            Vector2D current_displacement = new Vector2D((float) (repelling_force * Math.Cos(force_angle)), (float) (repelling_force * Math.Sin(force_angle)));
-
-            ops_particle.displacement += current_displacement;
-            this.displacement -= current_displacement;
+            prtB.displacement += force * dispDir;
+            this.displacement -= force * dispDir;
         }
+
 
         public static void InitialPositioning(List<Particle> particles)
         {

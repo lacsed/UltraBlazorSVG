@@ -19,7 +19,7 @@ namespace Extra
 
             Simulation simulation = IO.AutomatonInput(plants);
 
-            simulation.Simulate();
+            simulation.Simulate(true);
 
             SVGProperties properties = new SVGProperties(
                 textDistance: 25.0f,

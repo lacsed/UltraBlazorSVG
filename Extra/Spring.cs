@@ -22,15 +22,18 @@ namespace Extra
             }
         }
 
-        static void DisplaceSpring(Spring spring, float attenuation, float elastic)
+        static void DisplaceSpring(Spring spring, float attn, float elastic)
         {
-            Vector2D particle_a_position = spring.a.position;
-            Vector2D particle_b_position = spring.b.position;
+            Vector2D prtAPos = spring.a.position;
+            Vector2D prtBPos = spring.b.position;
 
-            Vector2D displacement = attenuation * elastic * (particle_b_position - particle_a_position);
+            float dist = (prtBPos - prtAPos).Length();
+            float force = (1 - attn) * elastic * dist;
 
-            spring.a.displacement += displacement;
-            spring.b.displacement -= displacement;
+            Vector2D forceDir = (prtBPos - prtAPos).Normalized();
+
+            spring.a.displacement += force * forceDir;
+            spring.b.displacement -= force * forceDir;
         }
     }
 }

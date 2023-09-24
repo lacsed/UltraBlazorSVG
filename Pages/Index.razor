@@ -5,7 +5,7 @@
     <div class="top">
         <img class="image-logo" src="images\Logo UltraDES.png"/>
         <ul class="menu-list">
-            <li>Run</li>
+            <li @onclick=HandleRunSimulation>Run</li>
             <li>Item2</li>
             <li>Item3</li>
             <li>Item4</li>
@@ -48,5 +48,10 @@
         }
         animationKey++;
         await InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleRunSimulation()
+    {
+        simulation.Simulate(false);
     }
 }
