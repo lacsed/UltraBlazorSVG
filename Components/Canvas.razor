@@ -234,7 +234,37 @@
     {
         if (activeLinkReference != null)
         {
-            activeLinkReference.HandleKeyUp(e);
+            if (e.Key == "Delete")
+            {
+                SMTransition toDelete = simulation.transitions.Find(x => x.origin.position == activeLinkReference.originState && x.destination.position == activeLinkReference.destinationState);
+                simulation.transitions.Remove(toDelete);
+                await InvokeAsync(StateHasChanged);
+            }
+            else
+            {
+                activeLinkReference.HandleKeyUp(e);
+            }
+        }
+        else if (activeNodeReference != null)
+        {
+            if (e.Key == "Delete")
+            {
+                Particle toDelete = simulation.particles.Find(x => x.id == activeNodeReference.nodeId);
+                List<SMTransition> toDeleteSMT = new List<SMTransition>();
+                foreach (SMTransition transition in simulation.transitions)
+                {
+                    if (transition.origin.id == toDelete.id || transition.destination.id == toDelete.id)
+                    {
+                        toDeleteSMT.Add(transition);
+                    }
+                }
+                foreach (SMTransition transition in toDeleteSMT)
+                {
+                    simulation.transitions.Remove(transition);
+                }
+                simulation.particles.Remove(toDelete);
+                await InvokeAsync(StateHasChanged);
+            }
         }
         if (e.Key == " ")
         {
