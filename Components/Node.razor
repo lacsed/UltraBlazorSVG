@@ -76,6 +76,7 @@
                     text = text.Substring(0, text.Length - 1);
             }
 
+            await textChanged.InvokeAsync(text);
             await nodeChanged.InvokeAsync();
             StateHasChanged();
         }
