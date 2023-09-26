@@ -299,7 +299,7 @@
         isCreatingTempLink = false;
 
         simulation.transitions.Add(newLink);
-        //simulation.springs.Add(newSpring);
+        simulation.springs.Add(newSpring);
 
         await InvokeAsync(StateHasChanged);
     }

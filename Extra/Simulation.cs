@@ -27,10 +27,10 @@ namespace Extra
 
         public void Simulate(bool initPos)
         {
-            float spacing = 10.0f;
-            float elastic = 10.0f;
-            float stop_condition = 0.05f;
-            float attenuation = 0;
+            float spacing = 1000.0f;
+            float elastic = 0.005f;
+            float stop_condition = 0.005f;
+            float attenuation = 0.0f;
             float maximum_displacement = 10 * stop_condition;
 
             if (initPos)
