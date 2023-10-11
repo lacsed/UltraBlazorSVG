@@ -2,10 +2,7 @@
     <ul class="states-list showing">
         @foreach (Particle particle in simulation.particles)
         {
-            <li>
-                <div class="check-box"></div>
-                <text>@particle.name</text>
-            </li>
+            <ListInstance instanceName="@particle.name"></ListInstance>
         }
     </ul>
 </div>

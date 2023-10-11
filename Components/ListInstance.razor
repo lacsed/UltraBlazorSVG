@@ -1,0 +1,22 @@
+﻿<li>
+    <div class="check-box" @onclick=HandleCheckBoxClick>
+        @if(clicked)
+        {
+            <div class="custom-checkmark"></div>
+        }
+    </div>
+    <text>@instanceName</text>
+</li>
+
+@code {
+    [Parameter]
+    public string instanceName { get; set; }
+
+    private bool clicked = false;
+
+    private async Task HandleCheckBoxClick()
+    {
+        clicked = !clicked;
+        await InvokeAsync(StateHasChanged);
+    }
+}
