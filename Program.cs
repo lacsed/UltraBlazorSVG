@@ -5,10 +5,6 @@ using System.Globalization;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
-// Set the culture to InvariantCulture
-CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
-CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
-
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
