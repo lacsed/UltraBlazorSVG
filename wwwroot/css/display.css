@@ -31,5 +31,13 @@
     border: 2px solid #007bff; /* Check mark color */
     border-left: none;
     border-top: none;
+    transform: rotate(275deg);
+}
+
+.arrow {
+    width: 10px;
+    height: 10px;
+    border-bottom: 2px solid black;
+    border-left: 2px solid black;
     transform: rotate(45deg);
 }

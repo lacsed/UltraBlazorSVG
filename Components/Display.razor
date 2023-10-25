@@ -1,10 +1,18 @@
 ﻿<div class="display">
+    <div>
+        States
+        <div class="arrow"></div>
+    </div>
     <ul class="states-list showing">
         @foreach (Particle particle in simulation.particles)
         {
             <ListInstance instanceName="@particle.name"></ListInstance>
         }
     </ul>
+    <div>
+        Transitions
+        <div class="arrow"></div>
+    </div>
 </div>
 
 
